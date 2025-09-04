@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Amazon Sales Report JSON to CSV Converter</title>
+    <!-- Version: 2025-09-04 -->
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .input-section {
+            margin-bottom: 30px;
+        }
+        textarea {
+            width: 100%;
+            height: 200px;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            resize: vertical;
+        }
+        button {
+            background: #007cba;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px 10px 0;
+        }
+        button:hover {
+            background: #005a87;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .output-section {
+            margin-top: 30px;
+        }
+        .preview {
+            background: #f8f8f8;
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 4px;
+            max-height: 400px;
+            overflow: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            white-space: pre;
+        }
+        .stats {
+            background: #e7f3ff;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 15px 0;
+        }
+        .error {
+            background: #ffe7e7;
+            color: #d00;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 15px 0;
+        }
+        .success {
+            background: #e7ffe7;
+            color: #060;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Amazon Sales Report JSON to CSV Converter</h1>
+        
+        <div class="input-section">
+            <h3>Step 1: Paste Your JSON Data</h3>
+            <textarea id="jsonInput" placeholder="Paste your Amazon sales report JSON data here..."></textarea>
+            <br>
+            <button onclick="loadSampleData()">Load Sample Data</button>
+            <button onclick="processJSON()">Convert to CSV</button>
+        </div>
+
+        <div id="results" class="output-section" style="display: none;">
+            <h3>Step 2: Download or Copy CSV Data</h3>
+            <div id="stats"></div>
+            <button onclick="downloadCSV()">Download CSV File</button>
+            <button onclick="copyToClipboard()">Copy to Clipboard</button>
+            
+            <h4>Preview (first 10 rows):</h4>
+            <div id="preview" class="preview"></div>
+        </div>
+
+        <div id="error" style="display: none;"></div>
+    </div>
+
+    <script>
+        let csvData = '';
+        let processedData = [];
+
+        function loadSampleData() {
+            // This would load the sample data from the uploaded JSON
+            const sampleJSON = `[
+    {
+        "json": "{\"reportSpecification\":{\"reportType\":\"GET_SALES_AND_TRAFFIC_REPORT\",\"reportOptions\":{\"dateGranularity\":\"WEEK\",\"asinGranularity\":\"PARENT\"},\"dataStartTime\":\"2025-08-15\",\"dataEndTime\":\"2025-08-16\",\"marketplaceIds\":[\"ATVPDKIKX0DER\"]},\"salesAndTrafficByDate\":[{\"date\":\"2025-08-10\",\"salesByDate\":{\"orderedProductSales\":{\"amount\":2014.27,\"currencyCode\":\"USD\"},\"orderedProductSalesB2B\":{\"amount\":109.99,\"currencyCode\":\"USD\"},\"unitsOrdered\":19,\"unitsOrderedB2B\":1,\"totalOrderItems\":19,\"totalOrderItemsB2B\":1,\"averageSalesPerOrderItem\":{\"amount\":106.01,\"currencyCode\":\"USD\"},\"averageSalesPerOrderItemB2B\":{\"amount\":109.99,\"currencyCode\":\"USD\"},\"averageUnitsPerOrderItem\":1.00,\"averageUnitsPerOrderItemB2B\":1.00,\"averageSellingPrice\":{\"amount\":106.01,\"currencyCode\":\"USD\"},\"averageSellingPriceB2B\":{\"amount\":109.99,\"currencyCode\":\"USD\"},\"unitsRefunded\":2,\"refundRate\":10.53,\"claimsGranted\":0,\"claimsAmount\":{\"amount\":0.00,\"currencyCode\":\"USD\"},\"shippedProductSales\":{\"amount\":2768.71,\"currencyCode\":\"USD\"},\"unitsShipped\":22,\"ordersShipped\":22},\"trafficByDate\":{\"browserPageViews\":188,\"browserPageViewsB2B\":1,\"mobileAppPageViews\":329,\"mobileAppPageViewsB2B\":6,\"pageViews\":517,\"pageViewsB2B\":7,\"browserSessions\":125,\"browserSessionsB2B\":1,\"mobileAppSessions\":198,\"mobileAppSessionsB2B\":4,\"sessions\":323,\"sessionsB2B\":5,\"buyBoxPercentage\":86.08,\"buyBoxPercentageB2B\":100.00,\"orderItemSessionPercentage\":5.88,\"orderItemSessionPercentageB2B\":20.00,\"unitSessionPercentage\":5.88,\"unitSessionPercentageB2B\":20.00,\"averageOfferCount\":376,\"averageParentItems\":375,\"feedbackReceived\":0,\"negativeFeedbackReceived\":0,\"receivedNegativeFeedbackRate\":0.00}}],\"salesAndTrafficByAsin\":[{\"parentAsin\":\"B09NMTSKGM\",\"salesByAsin\":{\"unitsOrdered\":0,\"unitsOrderedB2B\":0,\"orderedProductSales\":{\"amount\":0.00,\"currencyCode\":\"USD\"},\"orderedProductSalesB2B\":{\"amount\":0.00,\"currencyCode\":\"USD\"},\"totalOrderItems\":0,\"totalOrderItemsB2B\":0},\"trafficByAsin\":{\"browserSessions\":1,\"browserSessionsB2B\":0,\"mobileAppSessions\":0,\"mobileAppSessionsB2B\":0,\"sessions\":1,\"sessionsB2B\":0,\"browserSessionPercentage\":0.79,\"browserSessionPercentageB2B\":0.00,\"mobileAppSessionPercentage\":0.00,\"mobileAppSessionPercentageB2B\":0.00,\"sessionPercentage\":0.31,\"sessionPercentageB2B\":0.00,\"browserPageViews\":1,\"browserPageViewsB2B\":0,\"mobileAppPageViews\":0,\"mobileAppPageViewsB2B\":0,\"pageViews\":1,\"pageViewsB2B\":0,\"browserPageViewsPercentage\":0.52,\"browserPageViewsPercentageB2B\":0.00,\"mobileAppPageViewsPercentage\":0.00,\"mobileAppPageViewsPercentageB2B\":0.00,\"pageViewsPercentage\":0.19,\"pageViewsPercentageB2B\":0.00,\"buyBoxPercentage\":100.00,\"buyBoxPercentageB2B\":0.00,\"unitSessionPercentage\":0.00,\"unitSessionPercentageB2B\":0.00}}]}"
+    }
+]`;
+            document.getElementById('jsonInput').value = sampleJSON;
+        }
+
+        function processJSON() {
+            const input = document.getElementById('jsonInput').value.trim();
+            
+            if (!input) {
+                showError('Please paste your JSON data first.');
+                return;
+            }
+
+            try {
+                // Parse the input - it appears to be an array with a json string inside
+                let data;
+                const parsed = JSON.parse(input);
+                
+                if (Array.isArray(parsed) && parsed[0] && parsed[0].json) {
+                    // The JSON is wrapped in an array with a json string property
+                    data = JSON.parse(parsed[0].json);
+                } else {
+                    // Direct JSON object
+                    data = parsed;
+                }
+
+                if (!data.salesAndTrafficByAsin) {
+                    throw new Error('No salesAndTrafficByAsin data found in JSON');
+                }
+
+                // Process the ASIN data
+                processedData = processASINData(data.salesAndTrafficByAsin);
+                csvData = convertToCSV(processedData);
+
+                showResults(processedData.length);
+                hideError();
+
+            } catch (error) {
+                showError('Error parsing JSON: ' + error.message);
+                console.error('Full error:', error);
+            }
+        }
+
+        function processASINData(asinData) {
+            return asinData.map(item => {
+                const sales = item.salesByAsin || {};
+                const traffic = item.trafficByAsin || {};
+                
+                return {
+                    'Parent ASIN': item.parentAsin,
+                    
+                    // Sales Metrics
+                    'Units Ordered': sales.unitsOrdered || 0,
+                    'Units Ordered B2B': sales.unitsOrderedB2B || 0,
+                    'Ordered Product Sales': sales.orderedProductSales ? sales.orderedProductSales.amount : 0,
+                    'Ordered Product Sales B2B': sales.orderedProductSalesB2B ? sales.orderedProductSalesB2B.amount : 0,
+                    'Total Order Items': sales.totalOrderItems || 0,
+                    'Total Order Items B2B': sales.totalOrderItemsB2B || 0,
+                    
+                    // Traffic Metrics
+                    'Browser Sessions': traffic.browserSessions || 0,
+                    'Browser Sessions B2B': traffic.browserSessionsB2B || 0,
+                    'Mobile App Sessions': traffic.mobileAppSessions || 0,
+                    'Mobile App Sessions B2B': traffic.mobileAppSessionsB2B || 0,
+                    'Total Sessions': traffic.sessions || 0,
+                    'Total Sessions B2B': traffic.sessionsB2B || 0,
+                    
+                    'Browser Page Views': traffic.browserPageViews || 0,
+                    'Browser Page Views B2B': traffic.browserPageViewsB2B || 0,
+                    'Mobile App Page Views': traffic.mobileAppPageViews || 0,
+                    'Mobile App Page Views B2B': traffic.mobileAppPageViewsB2B || 0,
+                    'Total Page Views': traffic.pageViews || 0,
+                    'Total Page Views B2B': traffic.pageViewsB2B || 0,
+                    
+                    // Percentage Metrics
+                    'Browser Session Percentage': traffic.browserSessionPercentage || 0,
+                    'Browser Session Percentage B2B': traffic.browserSessionPercentageB2B || 0,
+                    'Mobile App Session Percentage': traffic.mobileAppSessionPercentage || 0,
+                    'Mobile App Session Percentage B2B': traffic.mobileAppSessionPercentageB2B || 0,
+                    'Session Percentage': traffic.sessionPercentage || 0,
+                    'Session Percentage B2B': traffic.sessionPercentageB2B || 0,
+                    
+                    'Browser Page Views Percentage': traffic.browserPageViewsPercentage || 0,
+                    'Browser Page Views Percentage B2B': traffic.browserPageViewsPercentageB2B || 0,
+                    'Mobile App Page Views Percentage': traffic.mobileAppPageViewsPercentage || 0,
+                    'Mobile App Page Views Percentage B2B': traffic.mobileAppPageViewsPercentageB2B || 0,
+                    'Page Views Percentage': traffic.pageViewsPercentage || 0,
+                    'Page Views Percentage B2B': traffic.pageViewsPercentageB2B || 0,
+                    
+                    'Buy Box Percentage': traffic.buyBoxPercentage || 0,
+                    'Buy Box Percentage B2B': traffic.buyBoxPercentageB2B || 0,
+                    'Unit Session Percentage': traffic.unitSessionPercentage || 0,
+                    'Unit Session Percentage B2B': traffic.unitSessionPercentageB2B || 0
+                };
+            });
+        }
+
+        function convertToCSV(data) {
+            if (data.length === 0) return '';
+            
+            const headers = Object.keys(data[0]);
+            const csvRows = [headers.join(',')];
+            
+            for (const row of data) {
+                const values = headers.map(header => {
+                    const value = row[header];
+                    // Handle values that might contain commas or quotes
+                    if (typeof value === 'string' && (value.includes(',') || value.includes('"'))) {
+                        return `"${value.replace(/"/g, '""')}"`;
+                    }
+                    return value;
+                });
+                csvRows.push(values.join(','));
+            }
+            
+            return csvRows.join('\n');
+        }
+
+        function showResults(recordCount) {
+            document.getElementById('results').style.display = 'block';
+            document.getElementById('stats').innerHTML = `
+                <div class="success">
+                    <strong>Conversion Successful!</strong><br>
+                    Processed ${recordCount} ASIN records with both sales and traffic metrics.
+                </div>
+            `;
+            
+            // Show preview of first 10 rows
+            const previewLines = csvData.split('\n').slice(0, 11); // Header + 10 data rows
+            document.getElementById('preview').textContent = previewLines.join('\n');
+        }
+
+        function showError(message) {
+            document.getElementById('error').innerHTML = `<div class="error">${message}</div>`;
+            document.getElementById('error').style.display = 'block';
+            document.getElementById('results').style.display = 'none';
+        }
+
+        function hideError() {
+            document.getElementById('error').style.display = 'none';
+        }
+
+        function downloadCSV() {
+            if (!csvData) {
+                showError('No CSV data to download. Please process JSON first.');
+                return;
+            }
+
+            const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', 'amazon_asin_data.csv');
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        async function copyToClipboard() {
+            if (!csvData) {
+                showError('No CSV data to copy. Please process JSON first.');
+                return;
+            }
+
+            try {
+                await navigator.clipboard.writeText(csvData);
+                // Show temporary success message
+                const button = event.target;
+                const originalText = button.textContent;
+                button.textContent = 'Copied!';
+                button.style.background = '#28a745';
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.style.background = '#007cba';
+                }, 2000);
+            } catch (err) {
+                showError('Failed to copy to clipboard. Please try downloading instead.');
+            }
+        }
+
+        // Load sample data on page load for demo
+        window.onload = function() {
+            loadSampleData();
+        };
+    </script>
+</body>
+</html>
